@@ -1,2 +1,4 @@
 env/
 PcfToolsProject/PcfToolsProject/__pycache__
+PcfToolsProject/banklinemanager/__pycache__
+PcfToolsProject/banklinemanager/migrations/__pycache__

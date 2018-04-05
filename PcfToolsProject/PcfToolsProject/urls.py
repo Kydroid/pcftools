@@ -19,7 +19,9 @@ from django.conf.urls import include, url
 from django.conf import settings
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    #url(r'^$', views.index, name="index"),
+    url(r'^banklinemanager/', include('banklinemanager.urls', namespace='banklinemanager')),
+    url(r'^appadminblm/', admin.site.urls)
 ]
 
 if settings.DEBUG:
