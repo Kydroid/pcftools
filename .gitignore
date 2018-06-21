@@ -2,3 +2,10 @@ env/
 PcfToolsProject/PcfToolsProject/__pycache__
 PcfToolsProject/banklinemanager/__pycache__
 PcfToolsProject/banklinemanager/migrations/__pycache__
+PcfToolsProject/db.sqlite3
+bootstrap-3.3.7/
+bootstrap-3.3.7-dist/
+examples_bootstrap/
+project-pcftools.sublime-project
+project-pcftools.sublime-workspace
+start-virtualenv-runserver-pcftools.bat
