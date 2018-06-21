@@ -1,0 +1,16 @@
+{% extends 'banklinemanager/base.html' %}
+
+{% block content %}
+
+<h1 class="sub-header col-sm-12">
+	{% if query %}
+		Résultat de la recherche : {{ query }}  
+	{% else %}
+		Lancer votre recherche
+	{% endif %}
+</h1>
+<div class="clearfix"></div>
+
+{% include 'banklinemanager/list.html' %}
+
+{% endblock %}

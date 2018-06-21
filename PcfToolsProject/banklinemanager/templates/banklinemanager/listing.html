@@ -1,0 +1,45 @@
+{% extends 'banklinemanager/base.html' %}
+
+{% block content %}
+
+<h1 class="sub-header col-sm-4">Toutes les données</h1>
+
+{% if paginate %}
+  <nav aria-label="">
+    <ul class="pager">
+      {% if bankline_list.has_previous %}
+          <li><a href="?page={{ bankline_list.previous_page_number }}">Précédent</a></li>
+      {% endif %}
+      {% if bankline_list.has_next %}
+          <li><a href="?page={{ bankline_list.next_page_number }}">Suivant</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+{% endif %}
+
+{% include 'banklinemanager/list.html' %}
+
+{% if paginate %}
+  <div class="clearfix"></div>
+  <nav aria-label="">
+    <ul class="pager">
+      {% if bankline_list.has_previous %}
+          <li><a href="?page={{ bankline_list.previous_page_number }}">Précédent</a></li>
+      {% endif %}
+
+      {% for i in bankline_list.paginator.page_range %}
+        {% if bankline_list.number == i %}
+          <li class="active"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+        {% else %}
+          <li><a href="?page={{ i }}">{{ i }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if bankline_list.has_next %}
+          <li><a href="?page={{ bankline_list.next_page_number }}">Suivant</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+{% endif %}
+
+{% endblock %}
