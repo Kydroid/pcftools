@@ -6,11 +6,12 @@ from django.shortcuts import render
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 from .models import BankLine, Bank
+from PcfToolsProject.Utils.utils import cleaned_data
 
 def index(request):
     ''' Show page with all elements of BankLine segmented by page'''
     message = ""
-    bankline_list = BankLine.objects.all().order_by('-transaction_date')
+    bankline_list = BankLine.objects.all().order_by('-transaction_date').select_related('bank')
 
     if len(bankline_list) > 0:
         paginator = Paginator(bankline_list, 100)
@@ -33,27 +34,35 @@ def index(request):
 
 def search(request):
     ''' Get the query and filters then show page with result of query'''
+    msg_search = ""
     message = ""
     total_credit = 0
     total_debit = 0
-    query = request.POST.get('query')
-    if not query:
-        bankline_list = None
-        message += "Vous devez lancer une recherche."
-    else:
-        bankline_list = BankLine.objects.filter(wording__icontains=query)
-        if len(bankline_list) > 0:
-            for bankline in bankline_list:
-                total_credit += bankline.credit
-                total_debit += bankline.debit
-        else:
-            message += "Aucun résultat trouvé pour %s" % (query)
+    bank_id = cleaned_data(request.POST.get('bank'))
+    sum_min = cleaned_data(request.POST.get('sum_min'))
+    sum_max = cleaned_data(request.POST.get('sum_max'))
+    date_start = cleaned_data(request.POST.get('date_start'))
+    date_end = cleaned_data(request.POST.get('date_end'))
+    type_search = cleaned_data(request.POST.get('type_search'))
+    query = cleaned_data(request.POST.get('query'))
 
+    bankline_list, msg_search = BankLine.search_bankline(query, type_search, date_start, date_end, sum_min, sum_max, bank_id)
+
+    if bankline_list and len(bankline_list) > 0:
+        message += "%s. // %s résultat trouvé(s)" % (msg_search, len(bankline_list))
+        for bankline in bankline_list:
+            total_credit += bankline.credit
+            total_debit += bankline.debit
+    elif query or date_start or sum_min or bank_id:
+        message += "%s. // Aucun résultat trouvé pour %s" % (msg_search, query)
+
+    banks = Bank.objects.all()
     context = {
         'bankline_list': bankline_list,
         'message': message,
         'total_credit' : total_credit,
-        'total_debit' : total_debit
+        'total_debit' : total_debit,
+        'banks': banks
     }
     return render(request, 'banklinemanager/search.html', context)
 

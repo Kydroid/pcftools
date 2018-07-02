@@ -3,6 +3,7 @@
     <thead>
       <tr>
         <th>ID</th>
+        <th>Compte</th>
         <th>Date</th>
         <th>Numero</th>
         <th>Libelle</th>
@@ -16,6 +17,7 @@
       {% for bankline in bankline_list %}
         <tr>
           <td>{{ bankline.id }}</td>
+          <td>{{ bankline.bank.name }}</td>
           <td>{{ bankline.transaction_date }}</td>
           <td>{{ bankline.transaction_number }}</td>
           <td>{{ bankline.wording }}</td>
@@ -30,6 +32,7 @@
       <tfoot>
         <tr>
           <th>ID</th>
+          <th>Compte</th>
           <th>Date</th>
           <th>Numero</th>
           <th>Libelle</th>
@@ -43,12 +46,14 @@
           <th></th>
           <th></th>
           <th></th>
+          <th></th>
           <th>Total Debit</th>
           <th>Total Credit</th>
           <th></th>
           <th></th>
         </tr>
         <tr>
+          <th></th>
           <th></th>
           <th></th>
           <th></th>

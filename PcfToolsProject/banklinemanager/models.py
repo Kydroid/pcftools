@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import transaction, IntegrityError
 from django.db import models
+from django.db.models import Q
 
 
 class Bank(models.Model):
@@ -12,7 +13,7 @@ class Bank(models.Model):
     _account_number = models.SmallIntegerField('numero de compte', unique=True)
 
     class Meta:
-        verbose_name = "Banque"
+        verbose_name = "Compte Bancaire"
 
     def __str__(self):
         return self.name
@@ -49,8 +50,9 @@ class BankLine(models.Model):
         # parse csv file to import line in database
         for bankline_csv in csv_file:
             try:
-                if len(bankline_csv) >= 6 and re.match(r'^(\d{2})/(\d{2})/(\d{2})$', bankline_csv[0]) is not None:
-                    date_re = re.search(r'^(\d{2})/(\d{2})/(\d{2})$', bankline_csv[0])
+                date = bankline_csv[0].strip()
+                if len(bankline_csv) >= 6 and re.match(r'^(\d{2})/(\d{2})/(\d{2})$', date) is not None:
+                    date_re = re.search(r'^(\d{2})/(\d{2})/(\d{2})$', date)
                     #date_re.reverse()
                     date_formatted = '20%s-%s-%s' % (date_re.group(3), date_re.group(2), date_re.group(1))
                     debit_decimal = bankline_csv[3].replace(",",".") if bankline_csv[3] else Decimal(0)
@@ -58,11 +60,11 @@ class BankLine(models.Model):
 
                     bankline = BankLine.objects.create(
                         transaction_date=date_formatted,
-                        wording=bankline_csv[2],
-                        transaction_number=bankline_csv[1],
+                        wording=bankline_csv[2].strip(),
+                        transaction_number=bankline_csv[1].strip(),
                         debit=debit_decimal,
                         credit=credit_decimal,
-                        bank_detail=bankline_csv[5],
+                        bank_detail=bankline_csv[5].strip(),
                         bank=bank) # do not allow bank deletion in admin)
                     if bankline is not None:
                         line_counter += 1
@@ -75,3 +77,57 @@ class BankLine(models.Model):
                 msg_insert_error += " // La ligne n'a pas été importée => %s" % (bankline_csv[1])
 
         return line_counter, msg_insert_error
+
+    @classmethod
+    def search_bankline(cls, query, type_search, date_start, date_end, sum_min, sum_max, bank_id):
+        min_lenght_search = 2
+        msg_search = "Recherche"
+
+        if sum_min:
+            sum_min = float(sum_min)
+        if sum_max:
+            sum_max = float(sum_max)
+
+        if query:
+            keywords = query.split("\r\n")
+            msg_search += ' sur " %s "' % (', '.join(keywords))
+            # research contains or startswith keywords
+            q_search = Q()
+            for keyword in keywords:
+                if len(keyword) >= min_lenght_search:
+                    if type_search == "startswith":
+                        q_search |= Q(wording__istartswith=keyword)
+                        q_search |= Q(bank_detail__istartswith=keyword)
+                        q_search |= Q(user_comment__istartswith=keyword)
+                    else:
+                        q_search |= Q(wording__icontains=keyword)
+                        q_search |= Q(bank_detail__icontains=keyword)
+                        q_search |= Q(user_comment__icontains=keyword)
+            bankline_list = BankLine.objects.filter(q_search).select_related('bank')
+        elif date_start or sum_min or bank_id:
+            bankline_list = BankLine.objects.all().select_related('bank')
+            # message += "Vous devez lancer une recherche."
+        else:
+            bankline_list = None
+
+        if date_start:
+            if not date_end:
+                date_end = date_start
+                msg_search += " en date du %s" % (date_start)
+            else:
+                msg_search += " entre le %s et le %s" % (date_start, date_end)
+            bankline_list = bankline_list.filter(transaction_date__range=(date_start, date_end))
+
+        if sum_min:
+            if not sum_max:
+                sum_max = sum_min
+            if sum_min > sum_max:
+                sum_min, sum_max = sum_max, sum_min
+            msg_search += " avec un montant entre %s€ et %s€" % (sum_min, sum_max)
+            bankline_list = bankline_list.filter(Q(debit__range=(sum_min, sum_max)) | Q(credit__range=(sum_min, sum_max)))
+
+        if bank_id:
+            bankline_list = bankline_list.filter(bank=bank_id)
+            msg_search += " sur le compte bancaire n°%s" % (bank_id)
+
+        return bankline_list, msg_search

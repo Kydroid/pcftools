@@ -4,12 +4,57 @@
 
 <h1 class="sub-header col-sm-12">
 	{% if query %}
-		Résultat de la recherche : {{ query }}  
+		Résultat de la recherche : {{ query }}
 	{% else %}
-		Lancer votre recherche
+		Veuillez lancer votre recherche.
 	{% endif %}
 </h1>
-<div class="clearfix"></div>
+<div class="clearfix">
+
+	<form id=form_search method="post" action="{% url 'banklinemanager:search' %}">
+        {% csrf_token %}
+
+        <div class="form-group col-md-5">
+			<fieldset class="keywords_search_zone">
+		    	<div>
+        			<textarea type="text" class="form-control" placeholder="Entrer vos mots clés sur des lignes différentes" 
+        			name="query"></textarea>
+		    	</div>
+				<legend for="name" class="col-md-5 col-sm-5 col-xs-12 control-label">Mode de recherche : </legend>
+				<input type="radio" name="type_search" value="contains" checked>Recherche les lignes contenant ces mot-clés<br>
+				<input type="radio" name="type_search" value="startswith">Recherche les lignes commençant par ces mot-clés<br>
+			</fieldset>             
+		</div>
+
+		<div class="form-group col-md-5">
+			<fieldset class="date_search_zone">
+				Date entre le <input type="date" name="date_start">
+				et le <input type="date" name="date_end">
+			</fieldset> 
+			<fieldset class="sum_search_zone">
+				Somme entre <input type="number" step="0.01" name="sum_min" value="">€
+				et <input type="number" step="0.01" name="sum_max" value="">€
+			</fieldset>
+			<fieldset class="bank_search_zone">
+				<label for="bank" class="col-md-4 col-sm-4 col-xs-4 control-label">Compte Bancaire : </label>
+				<div class="col-md-8">
+					<select class="form-control" name="bank" id="bank">
+						<option disabled selected value> -- Tous les comptes bancaires -- </option>
+						{% for bank in banks %}
+						    <option value="{{ bank.id }}">{{ bank.name }} - {{ bank.get_account_number }}</option>
+						{% endfor %}
+					</select>
+				</div>
+			</fieldset>
+		</div>
+		<div class="form-group col-md-2">                    
+			<button class="btn btn-primary" id="submit_search"> <span class="glyphicon glyphicon-search"></span>Rechercher</button>
+		</div>
+
+    </form>
+
+</div>
+
 
 {% include 'banklinemanager/list.html' %}
 
