@@ -123,4 +123,16 @@ Ajout kydroid **********/
 #form_search #submit_search span {
   margin-right: 1em;
 }
+.date_search_zone input,
+.sum_search_zone input {
+  width: 10em;
+}
 
+#logout_form {
+    display: inline-block;
+    color: #ddd;
+    height: 50px;
+    padding: 9px 15px;
+    font-size: 18px;
+    line-height: 20px;
+}

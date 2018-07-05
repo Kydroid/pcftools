@@ -125,3 +125,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 INTERNAL_IPS = ['127.0.0.1']
+
+# Redirect to home URL after login or logout (Default redirects to /accounts/profile/)
+LOGIN_REDIRECT_URL = '/banklinemanager/'
+LOGOUT_REDIRECT_URL = '/banklinemanager/'

@@ -36,6 +36,11 @@ class BankLine(models.Model):
 
     class Meta:
         verbose_name = "Ligne Banque"
+        permissions = (
+            ("can_list", "Can list and see all banklines"),
+            ("can_search", "Can search banklines"),
+            ("can_import", "Can import data bankline from datafile"),
+        )
 
     def __str__(self):
         return self.wording

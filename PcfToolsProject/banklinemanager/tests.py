@@ -3,6 +3,9 @@ import io
 
 from django.test import TestCase
 from django.urls import reverse
+from django.test.client import Client
+from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission
 
 from .models import BankLine, Bank
 
@@ -27,6 +30,16 @@ class PrepareDataTestCase(TestCase):
                                 credit=0.0,
                                 bank_detail="detail de la banque",
                                 bank=self.bank)
+
+        # useful for wiew with login and permissions required
+        self.user = User.objects.create_user('usertest', 'user@test.com', 'userpassword')
+        permission_list = Permission.objects.get(codename='can_list')
+        permission_search = Permission.objects.get(codename='can_search')
+        permission_import = Permission.objects.get(codename='can_import')
+        self.user.user_permissions.add(permission_list, permission_search, permission_import)
+        self.user.save()
+        self.client = Client()
+        self.client.login(username='usertest', password='userpassword')
 
 
 class IndexPageTestCase(PrepareDataTestCase):

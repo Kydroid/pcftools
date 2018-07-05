@@ -2,12 +2,15 @@ import csv
 import io
 from decimal import Decimal
 
+from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 from .models import BankLine, Bank
 from PcfToolsProject.Utils.utils import cleaned_data
 
+@login_required
+@permission_required('banklinemanager.can_list')
 def index(request):
     ''' Show page with all elements of BankLine segmented by page'''
     message = ""
@@ -32,6 +35,8 @@ def index(request):
     }
     return render(request, 'banklinemanager/listing.html', context)
 
+@login_required
+@permission_required('banklinemanager.can_search')
 def search(request):
     ''' Get the query and filters then show page with result of query'''
     msg_search = ""
@@ -66,6 +71,8 @@ def search(request):
     }
     return render(request, 'banklinemanager/search.html', context)
 
+@login_required
+@permission_required('banklinemanager.can_import')
 def import_data(request):
     ''' View to import data from csv file. this function read csv file and call BankLine.insert_data_from_csv
     to import in database. At the end, show page with csv import result.
