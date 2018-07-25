@@ -13,7 +13,7 @@ from PcfToolsProject.Utils.utils import cleaned_data
 @permission_required('banklinemanager.can_list')
 def index(request):
     ''' Show page with all elements of BankLine segmented by page'''
-    message = ""
+    list_message = []
     bankline_list = BankLine.objects.all().order_by('-transaction_date').select_related('bank')
 
     if len(bankline_list) > 0:
@@ -26,12 +26,12 @@ def index(request):
         except EmptyPage:
             bankline_list = paginator.page(paginator.num_pages)
     else:
-        message += "Aucune donnée présente."
+        list_message.append("Aucune donnée présente.")
 
     context = {
         'bankline_list': bankline_list,
         'paginate': True,
-        'message': message
+        'list_message': list_message
     }
     return render(request, 'banklinemanager/listing.html', context)
 
@@ -40,7 +40,7 @@ def index(request):
 def search(request):
     ''' Get the query and filters then show page with result of query'''
     msg_search = ""
-    message = ""
+    list_message = []
     total_credit = 0
     total_debit = 0
     bank_id = cleaned_data(request.POST.get('bank'))
@@ -54,17 +54,19 @@ def search(request):
     bankline_list, msg_search = BankLine.search_bankline(query, type_search, date_start, date_end, sum_min, sum_max, bank_id)
 
     if bankline_list and len(bankline_list) > 0:
-        message += "%s. // %s résultat trouvé(s)" % (msg_search, len(bankline_list))
+        list_message.append(msg_search)
+        list_message.append("%s résultat trouvé(s)" % (len(bankline_list)))
         for bankline in bankline_list:
             total_credit += bankline.credit
             total_debit += bankline.debit
     elif query or date_start or sum_min or bank_id:
-        message += "%s. // Aucun résultat trouvé pour %s" % (msg_search, query)
+        list_message.append(msg_search)
+        list_message.append("Aucun résultat trouvé pour %s" % (query))
 
     banks = Bank.objects.all()
     context = {
         'bankline_list': bankline_list,
-        'message': message,
+        'list_message': list_message,
         'total_credit' : total_credit,
         'total_debit' : total_debit,
         'banks': banks
@@ -77,43 +79,54 @@ def import_data(request):
     ''' View to import data from csv file. this function read csv file and call BankLine.insert_data_from_csv
     to import in database. At the end, show page with csv import result.
     '''
-    message = ""
-    message_error = ""
+    list_message = []
+    list_message_error = []
     line_counter = 0
+    inserted_line_counter = 0
 
     # check method POST and file imported
     if request.method == 'POST' and request.FILES["csv_file"] is not None:
 
         try:
-            file_uploaded = request.FILES['csv_file'].read()
-            decoded_file = file_uploaded.decode('latin-1') #utf-8
-            io_string = io.StringIO(decoded_file)
-            csv_file = csv.reader(io_string, delimiter=';', quotechar='|')
-
             bank_id = request.POST.get('bank')
             bank = Bank.objects.get(pk=bank_id)
 
-            # Call BankLine.insert_data_from_csv to import each line data
-            line_counter, message_error_lines = BankLine.insert_data_from_csv(bank, csv_file)
-            message_error += message_error_lines
+            file_uploaded = request.FILES['csv_file'].read()
+            decoded_file = file_uploaded.decode('latin-1') #utf-8
+            io_string = io.StringIO(decoded_file)
+
+            #if bank.name.lower().startswith("csv cepac"):
+            if bank.get_datafile_format == Bank.FORMAT_OFX_SGML:
+                # Call BankLine.insert_data_from_ofx to import each line data
+                line_counter, inserted_line_counter, message_error_lines = BankLine.insert_data_from_ofxsgml(bank, io_string.getvalue())
+                list_message_error.extend(message_error_lines)
+            elif bank.get_datafile_format == Bank.FORMAT_CSV:
+                csv_file = csv.reader(io_string, delimiter=';', quotechar='|')
+                # Call BankLine.insert_data_from_csv to import each line data
+                line_counter, inserted_line_counter, message_error_lines = BankLine.insert_data_from_csv_cepac(bank, csv_file)
+                list_message_error.extend(message_error_lines)
+            elif bank.get_datafile_format == Bank.FORMAT_OFX_XML:
+                # (not yet defined) maybe in future version 
+                list_message_error.append("Ce compte bancaire est prévu pour importer un fichier %s. \
+                    Ce type de fichier n est pas encore géré par cette application." % (Bank.FORMAT_OFX_XML))
 
         except csv.Error as e:
-            message_error += " // Le fichier n'a pas été importé  -- ERREUR csv.Error : imports datas, %s" % (e)
-            message_error += ' // file %s, line %d: %s' % (request.FILES['csv_file'], csv_file.line_num, e)
+            list_message_error.append("-> Le fichier n'a pas été importé  -- ERREUR csv.Error lors de l import datas")
+            list_message_error.append("--> ERREUR csv.Error = file %s, line %d: %s" % (request.FILES['csv_file'], csv_file.line_num, e))
         except Exception as e:
-            message_error += " // Le fichier n'a pas été importé  -- file %s, line %d: %s" % (request.FILES['csv_file'], csv_file.line_num, e)
+            list_message_error.append("-> Le fichier n'a pas été importé  -- file %s, %s" % (request.FILES['csv_file'], e))
         else:
-            message += " // imports des données OK"
-        finally:
             io_string.close()
-            message += " // %s lignes ont été importés." % (line_counter)
+            list_message.append("-> imports des données OK")
+        finally:
+            list_message.append("-> %s lignes sur %s ont été importés." % (inserted_line_counter, line_counter))
 
 
     # show page with csv import result
     banks = Bank.objects.all()
     context = {
-        'message': message,
-        'message_error': message_error,
+        'list_message': list_message,
+        'list_message_error': list_message_error,
         'banks': banks
     }
     return render(request, 'banklinemanager/import_data.html', context)

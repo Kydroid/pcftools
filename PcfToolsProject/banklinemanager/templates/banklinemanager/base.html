@@ -74,15 +74,21 @@
       <div class="row">
         <div class="col-sm-12 col-md-12 main">
 
-          {% if message_error %}
+          {% if list_message_error %}
             <div class="alert alert-warning">
-              <strong>Warning!</strong> {{ message_error }}
+              <strong>Warning!</strong> 
+              {% for message_error in list_message_error %}
+                {{ message_error }}</br>
+              {% endfor %}
             </div>
           {% endif %}
 
-          {% if message %}
+          {% if list_message %}
             <div class="alert alert-info">
-              <strong>Info!</strong> {{ message }}
+              <strong>Info!</strong>
+              {% for message in list_message %}
+                {{ message }}</br>
+              {% endfor %}
             </div>
           {% endif %}
 
